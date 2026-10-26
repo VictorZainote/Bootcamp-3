@@ -184,3 +184,63 @@ def test_caso_borda_apenas_tarefas_pendentes_retorna_medias_zero() -> None:
         "baixa": 0.0,
     }
     assert resultado["taxa_atraso_percentual"] == 0.0
+
+
+# ============================================================================
+# CENÁRIO 4: Validação Critical-in-the-Loop (Fase 3 — Auditoria QA & Domínio)
+# ============================================================================
+
+
+def test_critical_in_the_loop_prioridade_parcial_sem_divisao_por_zero() -> None:
+    """Garante que prioridades sem tarefas concluídas retornem 0.0 sem afetar as demais."""
+    tarefas: list[dict[str, Any]] = [
+        {
+            "id": 301,
+            "titulo": "Configurar container python:3.11-slim",
+            "prioridade": "ALTA",
+            "status": "concluída",
+            "data_criacao": "2026-10-20T10:00:00",
+            "data_conclusao": "2026-10-20T12:30:00",  # 2.5 horas
+            "prazo_estimado_horas": 3.0,
+        }
+    ]
+
+    resultado: dict[str, Any] = analyze_tasks(tarefas)
+
+    assert resultado["total_tarefas"] == 1
+    assert resultado["total_concluidas"] == 1
+    assert resultado["tempo_medio_conclusao_horas"] == {
+        "geral": 2.5,
+        "alta": 2.5,
+        "media": 0.0,
+        "baixa": 0.0,
+    }
+    assert resultado["taxa_atraso_percentual"] == 0.0
+
+
+def test_critical_in_the_loop_bloqueia_formato_iso_invalido_e_dominio_fora_do_sdd() -> None:
+    """Valida que datas malformadas ou prioridades fora do SDD disparam TaskValidationError."""
+    with pytest.raises(TaskValidationError, match="formato de data inválido"):
+        analyze_tasks(
+            [
+                {
+                    "id": 302,
+                    "prioridade": "alta",
+                    "status": "concluida",
+                    "data_criacao": "25/10/2026 10:00",
+                    "data_conclusao": "2026-10-25T12:00:00",
+                }
+            ]
+        )
+
+    with pytest.raises(TaskValidationError, match="prioridade desconhecida"):
+        analyze_tasks(
+            [
+                {
+                    "id": 303,
+                    "prioridade": "urgente",  # Fora do contrato SDD (alta, media, baixa)
+                    "status": "pendente",
+                    "data_criacao": "2026-10-25T10:00:00",
+                }
+            ]
+        )
