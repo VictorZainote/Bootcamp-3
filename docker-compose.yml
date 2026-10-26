@@ -1,0 +1,17 @@
+# ==============================================================================
+# docker-compose.yml — Orquestração Isolada da Suíte de Testes (TaskAnalyzer)
+# Execução com comando único: docker compose run --rm task-analyzer
+# ==============================================================================
+
+services:
+  task-analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sdd-task-analyzer:latest
+    container_name: sdd-task-analyzer-tests
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    command: ["pytest", "tests/test_harness.py", "-v"]
